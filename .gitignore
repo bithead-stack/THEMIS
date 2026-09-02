@@ -1,0 +1,33 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local environment and debug files
+.env
+.env.*
+!.env.example
+.dbg/
+*.log
+
+# IDE and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local datasets and generated experiment outputs
+dataset/*
+!dataset/.gitkeep
+checkpoints/*
+!checkpoints/.gitkeep
+artifacts/*
+!artifacts/.gitkeep

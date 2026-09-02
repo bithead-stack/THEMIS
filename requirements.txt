@@ -1,0 +1,12 @@
+# Server environment: Python 3.10.12, Linux x86_64
+# PyTorch CUDA runtime: 11.7
+--extra-index-url https://download.pytorch.org/whl/cu117
+
+dask==2024.2.1
+distributed==2024.2.1
+numpy==1.26.4
+pandas==1.5.3
+PyYAML==6.0.2
+scikit-learn==1.7.2
+torch==1.13.0+cu117
+xgboost==2.0.3
