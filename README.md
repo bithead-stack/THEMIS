@@ -216,4 +216,4 @@ Reported evaluation results include accuracy, macro and weighted precision, reca
 
 The datasets are not distributed with this repository. Users are responsible for obtaining them from legitimate sources and complying with their respective licenses and terms of use.
 
-This project does not currently include an open-source license. All rights are reserved until a license is added.
+The source code in this repository is licensed under the [MIT License](LICENSE). Dataset samples remain subject to their original licenses and terms of use.

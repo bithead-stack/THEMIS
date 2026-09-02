@@ -168,54 +168,6 @@ def _write_json_silent(path: str, payload: dict) -> None:
         pass
 
 
-# #region debug-point A:report-helper
-def _debug_report_cic_end2end_regression(
-    hypothesis_id: str,
-    location: str,
-    msg: str,
-    data: dict[str, object] | None = None,
-    run_id: str = "pre-fix",
-) -> None:
-    import json as _json
-    import urllib.request as _urlreq
-
-    env_path = "/data2/wmy/project/.dbg/cic-end2end-regression.env"
-    api_url = "http://127.0.0.1:7777/event"
-    session_id = "cic-end2end-regression"
-    try:
-        with open(env_path, "r", encoding="utf-8") as f:
-            text = f.read()
-        for line in text.splitlines():
-            if line.startswith("DEBUG_SERVER_URL="):
-                api_url = line.split("=", 1)[1].strip() or api_url
-            elif line.startswith("DEBUG_SESSION_ID="):
-                session_id = line.split("=", 1)[1].strip() or session_id
-    except Exception:
-        pass
-    payload = {
-        "sessionId": session_id,
-        "runId": run_id,
-        "hypothesisId": hypothesis_id,
-        "location": location,
-        "msg": f"[DEBUG] {msg}",
-        "data": data or {},
-    }
-    try:
-        _urlreq.urlopen(
-            _urlreq.Request(
-                api_url,
-                data=_json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-            ),
-            timeout=1.5,
-        ).read()
-    except Exception:
-        pass
-
-
-# #endregion
-
-
 def _load_config_payload(path: str) -> dict:
     with open(path, "r", encoding="utf-8") as f:
         text = f.read()
@@ -4507,45 +4459,6 @@ def _train_stage2_semi(
                         extra_try["hier_group_sum_thresholds"] = np.asarray(sum_cur, dtype=np.float32)
                         extra_try["hier_group_margin_thresholds"] = np.asarray(margin_cur, dtype=np.float32)
                         extra_try["hier_group_modes"] = mode_cur
-                        # #region debug-point D:pre-hier-eval
-                        try:
-                            _p = ".dbg/cic-stage2-shape.env"
-                            _u = "http://127.0.0.1:7777/event"
-                            _s = "cic-stage2-shape"
-                            if os.path.exists(_p):
-                                with open(_p, "r", encoding="utf-8") as _f:
-                                    _c = _f.read()
-                                for _line in _c.splitlines():
-                                    if _line.startswith("DEBUG_SERVER_URL="):
-                                        _u = _line.split("=", 1)[1].strip() or _u
-                                    elif _line.startswith("DEBUG_SESSION_ID="):
-                                        _s = _line.split("=", 1)[1].strip() or _s
-                            urllib.request.urlopen(
-                                urllib.request.Request(
-                                    _u,
-                                    data=json.dumps(
-                                        {
-                                            "sessionId": _s,
-                                            "runId": "pre-fix",
-                                            "hypothesisId": "D",
-                                            "location": "train_model.py:_train_stage2_semi:hier_eval",
-                                            "msg": "[DEBUG] evaluating hier_group candidate",
-                                            "data": {
-                                                "mode": str(mode),
-                                                "sum_thr": float(sum_thr),
-                                                "margin_thr": float(margin_thr),
-                                                "group_cids": [int(v) for v in np.asarray(cids, dtype=np.int64).tolist()],
-                                                "x_val_shape": list(np.shape(split.X_val)),
-                                            },
-                                        }
-                                    ).encode("utf-8"),
-                                    headers={"Content-Type": "application/json"},
-                                ),
-                                timeout=1.0,
-                            ).read()
-                        except Exception:
-                            pass
-                        # #endregion
                         y_val_pred, _ = _predict_multiclass(model, split.X_val, extra_try)
                         met = compute_metrics(
                             y_true=split.y_val,
@@ -5769,26 +5682,6 @@ def run_cascade_feedback_search(
         if not gate_mask_val.any():
             raise RuntimeError("No validation samples entered Stage-II under suspicious_unknown policy.")
         gate_pos_val = np.where(gate_mask_val)[0].astype(np.int64)
-        if cfg.dataset == "cic2024":
-            _debug_report_cic_end2end_regression(
-                "A",
-                "train_model.py:run_cascade_feedback_search:route-validation",
-                "validation routing summary before revised threshold search",
-                {
-                    "tau_b": float(tau_b),
-                    "tau_m": float(tau_m),
-                    "tau_b_candidates": [float(v) for v in tau_b_candidates],
-                    "tau_m_candidates": [float(v) for v in tau_m_candidates],
-                    "val_total": int(len(p_val)),
-                    "stage1_val_malicious_total": int((stage1_split.y_val != 0).sum()),
-                    "entered_stage2_total": int(gate_mask_val.sum()),
-                    "suspicious_candidate_total": int(((p_val >= np.float32(min_tau_b)) & (p_val < np.float32(tau_m))).sum()),
-                    "malicious_candidate_total": int((p_val >= np.float32(tau_m)).sum()),
-                    "p_val_min": float(np.min(p_val)),
-                    "p_val_max": float(np.max(p_val)),
-                    "p_val_mean": float(np.mean(p_val)),
-                },
-            )
         X_gate_val = df_task.iloc[idx_val_all[gate_pos_val]][feature_cols].to_numpy(dtype=np.float32, copy=True)
         X_gate_val = split.scaler.transform(X_gate_val).astype(np.float32, copy=False)
         stage_pred_val_gate, stage_prob_val_gate = _predict_multiclass(stage2_model, X_gate_val, stage2_extra)
@@ -5858,29 +5751,6 @@ def run_cascade_feedback_search(
                                 "release_coverage": release_cov,
                             }
                             search_records.append(rec)
-                            if cfg.dataset == "cic2024" and (
-                                abs(float(min_conf) - float(base_conf)) < 1e-9
-                                or abs(float(ent_thr) - float(base_ent)) < 1e-9
-                                or (abs(float(min_conf) - 0.2) < 1e-9 and abs(float(ent_thr) - 0.75) < 1e-9)
-                            ):
-                                _debug_report_cic_end2end_regression(
-                                    "B",
-                                    "train_model.py:run_cascade_feedback_search:search-candidate",
-                                    "validation candidate evaluated for revised threshold search",
-                                    {
-                                        "tau_b": float(tau_b_cand),
-                                        "tau_m": float(tau_m_cand),
-                                        "tau_c": float(min_conf),
-                                        "tau_e": float(ent_thr),
-                                        "tau_delta": float(margin_thr),
-                                        "objective": float(obj),
-                                        "macro_f1": float(summary["f1_macro"]),
-                                        "weighted_f1": float(summary["f1_weighted"]),
-                                        "mal_to_benign": float(mal_to_benign),
-                                        "known_to_unknown": float(known_to_unknown),
-                                        "release_coverage": float(release_cov),
-                                    },
-                                )
                             key = (
                                 float(obj),
                                 -float(mal_to_benign),
@@ -5998,33 +5868,6 @@ def run_cascade_feedback_search(
                 "tau_delta": float(best_margin_thr),
             },
         )
-        if cfg.dataset == "cic2024":
-            final_output_arr = np.asarray(final_test["final_output"], dtype=object)
-            route_arr = np.asarray(final_test["route"], dtype=object)
-            _debug_report_cic_end2end_regression(
-                "E",
-                "train_model.py:run_cascade_feedback_search:final-assembly",
-                "revised final assembly summary on test split",
-                {
-                    "tau_b": float(best_t),
-                    "tau_m": float(best_t_m),
-                    "tau_c": float(best_min_conf),
-                    "tau_e": float(best_ent_thr),
-                    "tau_delta": float(best_margin_thr),
-                    "test_total": int(len(p_test)),
-                    "entered_stage2_total": int((p_test >= np.float32(best_t)).sum()),
-                    "route_benign_total": int((route_arr == "Benign").sum()),
-                    "route_suspicious_total": int((route_arr == "SuspiciousCandidate").sum()),
-                    "route_malicious_total": int((route_arr == "MaliciousCandidate").sum()),
-                    "release_accepted_total": int(np.asarray(final_test["release_accepted"], dtype=bool).sum()),
-                    "pred_benign_total": int((final_output_arr == "Benign").sum()),
-                    "pred_suspicious_total": int((final_output_arr == SUSPICIOUS_LABEL).sum()),
-                    "pred_unknown_total": int((final_output_arr == MALICIOUS_UNKNOWN_LABEL).sum()),
-                    "pred_known_total": int(
-                        ((final_output_arr != "Benign") & (final_output_arr != SUSPICIOUS_LABEL) & (final_output_arr != MALICIOUS_UNKNOWN_LABEL)).sum()
-                    ),
-                },
-            )
         y_pred_e2e = np.asarray(final_test["y_pred"], dtype=np.int64)
         labels_all = list(final_test["labels_all"])
         metric_e2e = compute_metrics(y_true=y_true_e2e, y_pred=y_pred_e2e, y_prob=None, num_classes=len(labels_all))
@@ -6046,22 +5889,6 @@ def run_cascade_feedback_search(
             / max(1, int((y_true_e2e != 0).sum()))
         )
         e2e["selection_objective"] = float(best_rec["objective"])
-        if cfg.dataset == "cic2024":
-            _debug_report_cic_end2end_regression(
-                "D",
-                "train_model.py:run_cascade_feedback_search:metric-summary",
-                "revised end-to-end metrics after final assembly",
-                {
-                    "stage2_macro_f1": float(stage2_summary["f1_macro"]),
-                    "stage2_weighted_f1": float(stage2_summary["f1_weighted"]),
-                    "e2e_macro_f1": float(e2e["f1_macro"]),
-                    "e2e_weighted_f1": float(e2e["f1_weighted"]),
-                    "e2e_macro_auc": float(e2e["macro_auc"]),
-                    "e2e_weighted_auc": float(e2e["weighted_auc"]),
-                    "malicious_to_benign_rate": float(e2e["malicious_to_benign_rate"]),
-                    "known_to_unknown_rate": float(e2e["known_to_unknown_rate"]),
-                },
-            )
         print("End2End Test:", e2e)
         print(format_confusion_matrix(metric_e2e.cm, labels=labels_all))
 

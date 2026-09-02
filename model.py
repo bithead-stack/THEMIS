@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import json
 import numpy as np
 import os
 import pandas as pd
 import torch
 import torch.nn as nn
-import urllib.request
 
 try:
     import xgboost as xgb
@@ -28,76 +26,6 @@ from config import ExperimentConfig
 _FED_GATEWAY_MAP_CACHE: dict[str, dict[int, int]] = {}
 _XGB_CUDA_PROBE_CACHE: tuple[bool, str] | None = None
 _XGB_BACKEND_LOGGED: set[str] = set()
-
-
-def _debug_report_cic_stage2_shape(hypothesis_id: str, location: str, msg: str, data: dict) -> None:
-    # #region debug-point A:shape-report
-    try:
-        _p = ".dbg/cic-stage2-shape.env"
-        _u = "http://127.0.0.1:7777/event"
-        _s = "cic-stage2-shape"
-        if os.path.exists(_p):
-            with open(_p, "r", encoding="utf-8") as _f:
-                _c = _f.read()
-            for _line in _c.splitlines():
-                if _line.startswith("DEBUG_SERVER_URL="):
-                    _u = _line.split("=", 1)[1].strip() or _u
-                elif _line.startswith("DEBUG_SESSION_ID="):
-                    _s = _line.split("=", 1)[1].strip() or _s
-        _payload = {
-            "sessionId": _s,
-            "runId": "pre-fix",
-            "hypothesisId": str(hypothesis_id),
-            "location": str(location),
-            "msg": f"[DEBUG] {msg}",
-            "data": data,
-        }
-        urllib.request.urlopen(
-            urllib.request.Request(
-                _u,
-                data=json.dumps(_payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-            ),
-            timeout=1.0,
-        ).read()
-    except Exception:
-        pass
-    # #endregion
-
-
-def _debug_report_torch_cuda_enum(hypothesis_id: str, location: str, msg: str, data: dict) -> None:
-    # #region debug-point A:torch-cuda-enum
-    try:
-        _p = ".dbg/torch-cuda-enum.env"
-        _u = "http://127.0.0.1:7777/event"
-        _s = "torch-cuda-enum"
-        if os.path.exists(_p):
-            with open(_p, "r", encoding="utf-8") as _f:
-                _c = _f.read()
-            for _line in _c.splitlines():
-                if _line.startswith("DEBUG_SERVER_URL="):
-                    _u = _line.split("=", 1)[1].strip() or _u
-                elif _line.startswith("DEBUG_SESSION_ID="):
-                    _s = _line.split("=", 1)[1].strip() or _s
-        _payload = {
-            "sessionId": _s,
-            "runId": "pre-fix",
-            "hypothesisId": str(hypothesis_id),
-            "location": str(location),
-            "msg": f"[DEBUG] {msg}",
-            "data": data,
-        }
-        urllib.request.urlopen(
-            urllib.request.Request(
-                _u,
-                data=json.dumps(_payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-            ),
-            timeout=1.0,
-        ).read()
-    except Exception:
-        pass
-    # #endregion
 
 
 class TabularMLP(nn.Module):
@@ -178,39 +106,6 @@ def _probe_xgb_cuda() -> tuple[bool, str]:
     if xgb is None:
         _XGB_CUDA_PROBE_CACHE = (False, "xgboost import failed")
         return _XGB_CUDA_PROBE_CACHE
-    _debug_report_torch_cuda_enum(
-        "A",
-        "model.py:_probe_xgb_cuda:start",
-        "starting cuda probe",
-        {
-            "pid": int(os.getpid()),
-            "cuda_visible_devices": str(os.environ.get("CUDA_VISIBLE_DEVICES", "")),
-            "nvidia_visible_devices": str(os.environ.get("NVIDIA_VISIBLE_DEVICES", "")),
-            "torch_version": str(getattr(torch, "__version__", "unknown")),
-            "xgboost_version": str(getattr(xgb, "__version__", "unknown")),
-        },
-    )
-    try:
-        _torch_is_available = bool(torch.cuda.is_available())
-        _torch_device_count = int(torch.cuda.device_count())
-        _debug_report_torch_cuda_enum(
-            "A",
-            "model.py:_probe_xgb_cuda:torch",
-            "torch cuda probe result",
-            {
-                "is_available": bool(_torch_is_available),
-                "device_count": int(_torch_device_count),
-            },
-        )
-    except Exception as exc:
-        _debug_report_torch_cuda_enum(
-            "A",
-            "model.py:_probe_xgb_cuda:torch-exc",
-            "torch cuda probe raised",
-            {
-                "error": repr(exc),
-            },
-        )
     try:
         dtrain = xgb.DMatrix(np.asarray([[0.0], [1.0]], dtype=np.float32), label=np.asarray([0, 1], dtype=np.float32))
         xgb.train(
@@ -227,24 +122,8 @@ def _probe_xgb_cuda() -> tuple[bool, str]:
             verbose_eval=False,
         )
     except Exception as exc:
-        _debug_report_torch_cuda_enum(
-            "B",
-            "model.py:_probe_xgb_cuda:xgb-exc",
-            "xgboost cuda probe failed",
-            {
-                "error": repr(exc),
-            },
-        )
         _XGB_CUDA_PROBE_CACHE = (False, f"xgboost CUDA probe failed: {exc!r}")
         return _XGB_CUDA_PROBE_CACHE
-    _debug_report_torch_cuda_enum(
-        "B",
-        "model.py:_probe_xgb_cuda:xgb-ok",
-        "xgboost cuda probe succeeded",
-        {
-            "result": "cuda",
-        },
-    )
     _XGB_CUDA_PROBE_CACHE = (True, "cuda")
     return _XGB_CUDA_PROBE_CACHE
 
@@ -635,19 +514,6 @@ def _predict_multiclass(
         prob = prob.copy()
         prob[row_idx, :] = np.float32(0.0)
         prob[np.ix_(row_idx, cids)] = local_prob
-    if extra is not None and (extra.get("hier_group_models") is not None or extra.get("twolevel_expert_models") is not None):
-        _debug_report_cic_stage2_shape(
-            "A",
-            "model.py:_predict_multiclass:entry",
-            "multiclass entry with local experts",
-            {
-                "x_shape": list(np.shape(X)),
-                "prob_shape": list(np.shape(prob)),
-                "has_hier_group_models": extra.get("hier_group_models") is not None,
-                "has_twolevel_expert_models": extra.get("twolevel_expert_models") is not None,
-            },
-        )
-
     class_mult = None if extra is None else extra.get("class_multiplier", None)
     score = prob
     if class_mult is not None:
@@ -983,18 +849,6 @@ def _predict_multiclass(
                 p_local = m.predict_proba(X[route]).astype(np.float32, copy=False)
                 choose = p_local.argmax(axis=1).astype(np.int64, copy=False)
                 mapped = cids[choose].astype(np.int64, copy=False)
-                _debug_report_cic_stage2_shape(
-                    "B",
-                    "model.py:_predict_multiclass:hier_group",
-                    "hier_group route triggered",
-                    {
-                        "route_count": int(route.sum()),
-                        "cids": [int(v) for v in cids.tolist()],
-                        "p_local_shape": list(np.shape(p_local)),
-                        "choose_shape": list(np.shape(choose)),
-                        "mapped_shape": list(np.shape(mapped)),
-                    },
-                )
                 _overwrite_prob_with_local_subset(route, cids, p_local)
                 pred = pred.copy()
                 pred[np.where(route)[0]] = mapped
@@ -1048,19 +902,6 @@ def _predict_multiclass(
                 p_local = m.predict_proba(X[route]).astype(np.float32, copy=False)
                 choose = p_local.argmax(axis=1).astype(np.int64, copy=False)
                 mapped = cids[choose].astype(np.int64, copy=False)
-                _debug_report_cic_stage2_shape(
-                    "C",
-                    "model.py:_predict_multiclass:twolevel",
-                    "twolevel route triggered",
-                    {
-                        "route_count": int(route.sum()),
-                        "gid": gid,
-                        "cids": [int(v) for v in cids.tolist()],
-                        "p_local_shape": list(np.shape(p_local)),
-                        "choose_shape": list(np.shape(choose)),
-                        "mapped_shape": list(np.shape(mapped)),
-                    },
-                )
                 _overwrite_prob_with_local_subset(route, cids, p_local)
                 pred = pred.copy()
                 pred[np.where(route)[0]] = mapped
