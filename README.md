@@ -20,10 +20,10 @@ Stage 1 performs binary classification between benign and malicious traffic. Sta
 
 - `dapt2020`
 - `zapt`
-- `cic2024`
-- `merged_bai`
-- `weekdata`
 - `earlycrow`
+- `BAI-Net26`
+- `Unraveled`
+- `UNSW-NB15-2024`
 
 Dataset files are not included in this repository. Use `--dataset` to select a dataset and `--data_dir` to provide its local path.
 
