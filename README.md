@@ -27,30 +27,6 @@ Stage 1 performs binary classification between benign and malicious traffic. Sta
 
 Dataset files are not included in this repository. Use `--dataset` to select a dataset and `--data_dir` to provide its local path.
 
-## Pipeline
-
-```text
-Raw network-flow data
-        │
-        ▼
-Cleaning and feature engineering
-        │
-        ▼
-Train / validation / test split
-        │
-        ▼
-Stage 1: Benign vs. Malicious
-        │
-        ▼
-Stage 2: Attack stage or activity
-        │
-        ▼
-Threshold selection and evaluation
-        │
-        ▼
-Checkpoints, metrics, and predictions
-```
-
 ## Project Structure
 
 ```text
@@ -81,9 +57,30 @@ GPU: NVIDIA GeForce RTX 4090
 
 The default single-process training path uses the XGBoost CUDA backend and requires a CUDA-capable NVIDIA GPU.
 
-## Usage
+## Installation and Running
 
-Run the complete two-stage pipeline:
+Clone the repository:
+
+```bash
+git clone https://github.com/bithead-stack/THEMIS.git
+cd THEMIS
+```
+
+Create and activate a Python 3.10 virtual environment:
+
+```bash
+python3.10 -m venv .venv
+source .venv/bin/activate
+```
+
+Install the required dependencies:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Run the training pipeline with a dataset name and its local path:
 
 ```bash
 python train_model.py \
@@ -91,95 +88,29 @@ python train_model.py \
   --data_dir <dataset_path>
 ```
 
-Run Stage 1 only:
-
-```bash
-python train_model.py \
-  --dataset <dataset_name> \
-  --data_dir <dataset_path> \
-  --task stage1
-```
-
-Use activity labels for Stage 2:
-
-```bash
-python train_model.py \
-  --dataset <dataset_name> \
-  --data_dir <dataset_path> \
-  --stage2_label activity
-```
-
-Enable suspicious and unknown output labels:
-
-```bash
-python train_model.py \
-  --dataset <dataset_name> \
-  --data_dir <dataset_path> \
-  --inference_policy suspicious_unknown
-```
-
-Enable verbose output:
-
-```bash
-python train_model.py \
-  --dataset <dataset_name> \
-  --data_dir <dataset_path> \
-  --verbose
-```
-
-Display all command-line options:
+Display all available options:
 
 ```bash
 python train_model.py --help
 ```
 
-## Configuration Files
-
-The `--config_path` option accepts JSON, YAML, and YML files.
-
-Example YAML configuration:
-
-```yaml
-experiment_config:
-  dataset: cic2024
-  data_dir: ./dataset/cic2024/cic2024.csv
-  task: all
-  stage2_label: stage
-  inference_policy: original
-  seed: 42
-  test_size: 0.2
-  val_size: 0.1
-  labeled_ratio: 0.5
-  pseudo_label_threshold: 0.9
-  checkpoint_dir: checkpoints
-  artifacts_dir: artifacts
-```
-
-Run with a configuration file:
-
-```bash
-python train_model.py --config_path ./configs/cic2024.yaml
-```
-
-Explicit command-line experiment options override matching values from the configuration file.
-
 ## Common Options
 
-| Option | Description | Default |
-| --- | --- | --- |
-| `--dataset` | Dataset identifier | `dapt2020` |
-| `--data_dir` | Local dataset path | `./dataset/dapt2020` |
-| `--task` | Run `all` stages or `stage1` only | `all` |
-| `--stage2_label` | Use `stage` or `activity` labels | `stage` |
-| `--inference_policy` | Use `original` or `suspicious_unknown` | `original` |
-| `--seed` | Random seed | `42` |
-| `--test_size` | Test-set fraction | `0.2` |
-| `--val_size` | Validation-set fraction | `0.1` |
-| `--labeled_ratio` | Labeled fraction for semi-supervised training | `0.5` |
-| `--pseudo_label_threshold` | Pseudo-label confidence threshold | `0.9` |
-| `--checkpoint_dir` | Checkpoint and metric output directory | `checkpoints` |
-| `--artifacts_dir` | Threshold and prediction output directory | `artifacts` |
-| `--verbose` | Enable detailed console output | disabled |
+| Option                       | Description                                   | Default                |
+| ---------------------------- | --------------------------------------------- | ---------------------- |
+| `--dataset`                | Dataset identifier                            | `dapt2020`           |
+| `--data_dir`               | Local dataset path                            | `./dataset/dapt2020` |
+| `--task`                   | Run`all` stages or `stage1` only          | `all`                |
+| `--stage2_label`           | Use`stage` or `activity` labels           | `stage`              |
+| `--inference_policy`       | Use`original` or `suspicious_unknown`     | `original`           |
+| `--seed`                   | Random seed                                   | `42`                 |
+| `--test_size`              | Test-set fraction                             | `0.2`                |
+| `--val_size`               | Validation-set fraction                       | `0.1`                |
+| `--labeled_ratio`          | Labeled fraction for semi-supervised training | `0.5`                |
+| `--pseudo_label_threshold` | Pseudo-label confidence threshold             | `0.9`                |
+| `--checkpoint_dir`         | Checkpoint and metric output directory        | `checkpoints`        |
+| `--artifacts_dir`          | Threshold and prediction output directory     | `artifacts`          |
+| `--verbose`                | Enable detailed console output                | disabled               |
 
 ## Outputs
 
