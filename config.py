@@ -3,6 +3,25 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
+_DATASET_NAME_ALIASES = {
+    "dapt2020": "dapt2020",
+    "zapt": "zapt",
+    "earlycrow": "earlycrow",
+    "bai-net26": "merged_bai",
+    "merged_bai": "merged_bai",
+    "unraveled": "weekdata",
+    "weekdata": "weekdata",
+    "unsw-nb15-2024": "cic2024",
+    "cic2024": "cic2024",
+}
+
+
+def normalize_dataset_name(name: str) -> str:
+    """Map public dataset names and legacy identifiers to internal names."""
+    value = str(name).strip()
+    return _DATASET_NAME_ALIASES.get(value.casefold(), value)
+
+
 @dataclass(frozen=True)
 class ExperimentConfig:
     dataset: str = "dapt2020"

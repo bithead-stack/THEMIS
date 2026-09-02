@@ -23,7 +23,7 @@ try:
 except Exception:
     yaml = None
 
-from config import ExperimentConfig
+from config import ExperimentConfig, normalize_dataset_name
 from data_loader import (
     META_COLS_DAPT,
     add_network_context_group_stats_train_only,
@@ -6675,6 +6675,7 @@ def parse_args() -> tuple[ExperimentConfig, argparse.Namespace]:
         merged = asdict(cfg) | override
         cfg = ExperimentConfig(**merged)
 
+    cfg = replace(cfg, dataset=normalize_dataset_name(cfg.dataset))
     return cfg, args
 
 
