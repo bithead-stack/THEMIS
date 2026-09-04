@@ -4,18 +4,6 @@ This project provides a two-stage training pipeline for network intrusion detect
 
 Stage 1 performs binary classification between benign and malicious traffic. Stage 2 classifies malicious samples by attack stage or activity. The pipeline includes feature engineering, semi-supervised learning, threshold selection, evaluation, and artifact export.
 
-## Features
-
-- Two-stage benign/malicious and attack-category classification
-- Semi-supervised learning with pseudo-labeling
-- Network-context and statistical feature engineering
-- Train, validation, and test splitting with feature scaling
-- Validation-based decision-threshold selection
-- Closed-set and `suspicious_unknown` inference policies
-- Class balancing and rare-class oversampling
-- Model checkpoint, metric, error-sample, and prediction export
-- Optional distributed XGBoost training with Dask
-
 ## Supported Datasets
 
 - `dapt2020`
@@ -93,58 +81,3 @@ Display all available options:
 ```bash
 python train_model.py --help
 ```
-
-## Common Options
-
-| Option                       | Description                                   | Default                |
-| ---------------------------- | --------------------------------------------- | ---------------------- |
-| `--dataset`                | Dataset identifier                            | `dapt2020`           |
-| `--data_dir`               | Local dataset path                            | `./dataset/dapt2020` |
-| `--task`                   | Run`all` stages or `stage1` only          | `all`                |
-| `--stage2_label`           | Use`stage` or `activity` labels           | `stage`              |
-| `--inference_policy`       | Use`original` or `suspicious_unknown`     | `original`           |
-| `--seed`                   | Random seed                                   | `42`                 |
-| `--test_size`              | Test-set fraction                             | `0.2`                |
-| `--val_size`               | Validation-set fraction                       | `0.1`                |
-| `--labeled_ratio`          | Labeled fraction for semi-supervised training | `0.5`                |
-| `--pseudo_label_threshold` | Pseudo-label confidence threshold             | `0.9`                |
-| `--checkpoint_dir`         | Checkpoint and metric output directory        | `checkpoints`        |
-| `--artifacts_dir`          | Threshold and prediction output directory     | `artifacts`          |
-| `--verbose`                | Enable detailed console output                | disabled               |
-
-## Outputs
-
-Depending on the task and inference policy, the pipeline may generate:
-
-```text
-checkpoints/
-├── <dataset>_stage_binary_seed<seed>_best.pt
-├── <dataset>_cascade_feedback_seed<seed>_best.pt
-├── <dataset>_seed<seed>_stage1_metrics.json
-├── <dataset>_seed<seed>_stage2_metrics.json
-├── <dataset>_seed<seed>_end2end_metrics.json
-├── <dataset>_seed<seed>_errors.csv
-└── <dataset>_hard_errors.csv
-
-artifacts/
-├── thresholds/
-│   └── <dataset>_<seed>.json
-└── predictions/
-    └── <dataset>_seed<seed>_closed_set.csv
-```
-
-Reported evaluation results include accuracy, macro and weighted precision, recall, F1, AUC, FPR, and confusion matrices.
-
-## Reproducibility
-
-- Keep the random seed fixed across comparable experiments.
-- Record the exact command or configuration file used for each run.
-- Record the dataset version, preprocessing rules, class filters, and split strategy.
-- Use separate checkpoint and artifact directories for independent experiments.
-- Keep the Python, CUDA, GPU driver, and dependency versions with published results.
-
-## Data and License
-
-The datasets are not distributed with this repository. Users are responsible for obtaining them from legitimate sources and complying with their respective licenses and terms of use.
-
-The source code in this repository is licensed under the [MIT License](LICENSE). Dataset samples remain subject to their original licenses and terms of use.
