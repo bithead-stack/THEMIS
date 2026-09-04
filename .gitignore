@@ -29,7 +29,6 @@ dataset/*
 !dataset/.gitkeep
 !dataset/DATASETS.md
 !dataset/BAI-Net26.csv
-!dataset/ZAPT.csv
 checkpoints/*
 !checkpoints/.gitkeep
 artifacts/*

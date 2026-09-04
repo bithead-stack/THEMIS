@@ -2,14 +2,15 @@
 
 This project supports six network-security datasets.
 
-## Included Datasets
+## Included Dataset
 
-The following datasets are included in the `dataset/` directory and are tracked with Git LFS:
+The following dataset is included in the `dataset/` directory and is tracked with Git LFS:
 
 | Dataset | Repository path |
 | --- | --- |
 | BAI-Net26 | `dataset/BAI-Net26.csv` |
-| ZAPT | `dataset/ZAPT.csv` |
+
+ZAPT remains supported by the code but is not distributed in this repository.
 
 ## External Datasets
 
