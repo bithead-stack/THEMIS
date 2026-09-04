@@ -27,6 +27,8 @@ Thumbs.db
 # Local datasets and generated experiment outputs
 dataset/*
 !dataset/.gitkeep
+!dataset/BAI-Net26.csv
+!dataset/ZAPT.csv
 checkpoints/*
 !checkpoints/.gitkeep
 artifacts/*
