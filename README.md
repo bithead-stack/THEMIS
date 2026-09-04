@@ -13,7 +13,7 @@ Stage 1 performs binary classification between benign and malicious traffic. Sta
 - `Unraveled`
 - `UNSW-NB15-2024`
 
-ZAPT and BAI-Net26 are included through Git LFS. The sources for the other four datasets are listed in [DATASETS.md](DATASETS.md). Use `--dataset` to select a dataset and `--data_dir` to provide its local path.
+ZAPT and BAI-Net26 are included through Git LFS. The sources for the other four datasets are listed in [dataset/DATASETS.md](dataset/DATASETS.md). Use `--dataset` to select a dataset and `--data_dir` to provide its local path.
 
 ## Project Structure
 
